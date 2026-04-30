@@ -32,9 +32,18 @@
   html, body {
     width: 100%; height: 100%;
     overflow: hidden;
+    overscroll-behavior: none;
     background: var(--bg-deep);
     font-family: 'DM Sans', sans-serif;
     color: var(--text-primary);
+  }
+
+  /* iOS scroll lock — position:fixed is the only reliable way */
+  @media (max-width: 768px) {
+    html, body {
+      position: fixed;
+      top: 0; left: 0;
+    }
   }
 
   /* ========== STARFIELD ========== */
@@ -490,7 +499,15 @@
 
   /* ========== MOBILE RESPONSIVE ========== */
   @media (max-width: 768px) {
-    .slide { padding: 20px 18px 80px; }
+    .slide {
+      padding: 20px 18px 100px;
+      /* Allow tall content to scroll within the slide, not the body */
+      overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
+      /* Align from top so overflow scrolls naturally downward */
+      justify-content: flex-start;
+      align-items: flex-start;
+    }
 
     /* Stack two-column step layouts into single column */
     .step-layout {
@@ -1281,12 +1298,18 @@
     if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); prevSlide(); }
   });
 
-  // Touch swipe
-  let touchStartX = 0;
-  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
-  document.addEventListener('touchend',   e => {
+  // Touch swipe — only fire on predominantly horizontal gestures
+  let touchStartX = 0, touchStartY = 0;
+  document.addEventListener('touchstart', e => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  });
+  document.addEventListener('touchend', e => {
     const dx = e.changedTouches[0].clientX - touchStartX;
-    if (Math.abs(dx) > 50) { dx < 0 ? nextSlide() : prevSlide(); }
+    const dy = e.changedTouches[0].clientY - touchStartY;
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+      dx < 0 ? nextSlide() : prevSlide();
+    }
   });
 
   updateUI();
