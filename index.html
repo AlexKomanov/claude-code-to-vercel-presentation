@@ -552,11 +552,11 @@
     .j-label { font-size: 10px; max-width: 56px; }
     .j-arrow { font-size: 14px; }
 
-    /* Nav dots and buttons */
+    /* Nav: hide arrow buttons on mobile — swipe handles navigation */
+    #nav-buttons { display: none; }
     #dot-nav { gap: 6px; }
     .dot { width: 5px; height: 5px; }
     .dot.active { width: 14px; }
-    .nav-btn { width: 48px; height: 48px; font-size: 18px; }
 
     /* Hide keyboard hint on mobile */
     #keyboard-hint { display: none; }
@@ -1298,16 +1298,25 @@
     if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')                    { e.preventDefault(); prevSlide(); }
   });
 
-  // Touch swipe — only fire on predominantly horizontal gestures
-  let touchStartX = 0, touchStartY = 0;
+  // Touch swipe — horizontal only; vertical scroll must not trigger navigation
+  let touchStartX = 0, touchStartY = 0, swipeLocked = false;
   document.addEventListener('touchstart', e => {
     touchStartX = e.touches[0].clientX;
     touchStartY = e.touches[0].clientY;
+    swipeLocked = false;
   });
+  document.addEventListener('touchmove', e => {
+    if (swipeLocked) return;
+    const dx = Math.abs(e.touches[0].clientX - touchStartX);
+    const dy = Math.abs(e.touches[0].clientY - touchStartY);
+    // If first significant movement is vertical, lock out slide swipe entirely
+    if (dy > 8 && dy >= dx) swipeLocked = true;
+  }, { passive: true });
   document.addEventListener('touchend', e => {
+    if (swipeLocked) return;
     const dx = e.changedTouches[0].clientX - touchStartX;
     const dy = e.changedTouches[0].clientY - touchStartY;
-    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 1.5) {
+    if (Math.abs(dx) > 50 && Math.abs(dx) > Math.abs(dy) * 2) {
       dx < 0 ? nextSlide() : prevSlide();
     }
   });
